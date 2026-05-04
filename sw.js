@@ -1,5 +1,5 @@
-const CACHE = 'arb-bot-v2';
-const SHELL = ['./arb-bot.html', './manifest.json', './icon.svg'];
+const CACHE = 'arb-multi-v1';
+const SHELL = ['./arb-bot-multi-currency.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)));

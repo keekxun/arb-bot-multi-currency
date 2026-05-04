@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arb Bot</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2ecc71">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Arb Bot">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 760px; margin: 0 auto; }
+
+    h1 {
+      font-size: 1.7rem;
+      letter-spacing: 3px;
+      color: #2ecc71;
+      margin-bottom: 1.2rem;
+      text-align: center;
+    }
+
+    /* Tabs */
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+
+    .tab-btn {
+      flex: 1;
+      background: #16213e;
+      border: 2px solid #0f3460;
+      border-radius: 8px;
+      color: #888;
+      padding: 0.55rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.5px;
+    }
+
+    .tab-btn.active {
+      background: #0d2b1a;
+      border-color: #2ecc71;
+      color: #2ecc71;
+    }
+
+    /* FX card */
+    .fx-card {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .fx-label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+    .fx-value { font-size: 1.6rem; font-weight: bold; color: #a8dadc; }
+    .fx-date  { font-size: 0.78rem; color: #555; margin-left: auto; }
+    .fx-error { color: #e94560; font-size: 0.9rem; }
+
+    /* ARB BANNER */
+    .arb-banner {
+      background: #0d2b1a;
+      border: 2px solid #2ecc71;
+      border-radius: 12px;
+      padding: 1.2rem 1.5rem;
+      margin-bottom: 1rem;
+      display: none;
+      flex-direction: column;
+      gap: 1rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    .arb-banner.active { display: flex; }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .banner-header { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; }
+    .banner-icon   { font-size: 1.4rem; }
+    .banner-title  { font-size: 1rem; font-weight: bold; color: #2ecc71; letter-spacing: 2px; text-transform: uppercase; }
+
+    .dismiss-btn {
+      margin-left: auto;
+      background: transparent;
+      border: 1px solid #2ecc71;
+      color: #2ecc71;
+      padding: 0.3rem 0.9rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: background 0.15s;
+    }
+    .dismiss-btn:hover { background: #1a4a2e; }
+
+    .banner-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+    .action {
+      flex: 1;
+      min-width: 240px;
+      background: #0a1f12;
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .action-label { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; font-weight: bold; }
+    .action.buy  .action-label { color: #2ecc71; }
+    .action.sell .action-label { color: #e74c3c; }
+    .action-venue { font-size: 1rem; font-weight: bold; color: #eee; }
+    .action-chain { font-size: 0.8rem; color: #888; }
+    .action-price { font-size: 1.4rem; font-weight: bold; font-family: monospace; color: #fff; }
+
+    .action-link {
+      display: inline-block;
+      margin-top: 0.4rem;
+      padding: 0.4rem 1rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: bold;
+      text-decoration: none;
+      text-align: center;
+      transition: opacity 0.15s;
+    }
+
+    .action.buy  .action-link { background: #1a4a2e; color: #2ecc71; border: 1px solid #2ecc71; }
+    .action.sell .action-link { background: #4a1a1a; color: #e74c3c; border: 1px solid #e74c3c; }
+    .action-link:hover { opacity: 0.8; }
+
+    .banner-note { font-size: 0.78rem; color: #666; border-top: 1px solid #1a3a1a; padding-top: 0.7rem; }
+    .banner-time { font-size: 0.75rem; color: #444; }
+
+    .opp-divider { border: none; border-top: 1px solid #1a3a1a; margin: 0.3rem 0; }
+    .opp-header  { display: flex; align-items: center; gap: 0.8rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+    .opp-spread  { font-size: 1.1rem; font-weight: bold; font-family: monospace; color: #fff; }
+    .opp-pair    { font-size: 0.85rem; color: #2ecc71; }
+    .opp-min     { font-size: 0.78rem; color: #555; margin-left: auto; }
+
+    /* Controls */
+    .controls {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .control-group { display: flex; align-items: center; gap: 0.7rem; }
+
+    .control-group label {
+      font-size: 0.85rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    select {
+      background: #0f3460;
+      color: #eee;
+      border: 1px solid #1a4a80;
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    input[type="number"] {
+      background: #0f3460;
+      color: #eee;
+      border: 1px solid #1a4a80;
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.9rem;
+      width: 90px;
+      -moz-appearance: textfield;
+    }
+    input[type="number"]::-webkit-outer-spin-button,
+    input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+    /* Price table */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 12px;
+      border: 1px solid #0f3460;
+      margin-bottom: 0.8rem;
+    }
+
+    table { width: 100%; border-collapse: collapse; background: #16213e; }
+
+    thead th {
+      background: #0f3460;
+      padding: 0.6rem 0.9rem;
+      text-align: left;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #a8dadc;
+    }
+
+    thead th:last-child { text-align: right; }
+    tbody tr { border-bottom: 1px solid #0f3460; transition: background 0.15s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #1d2e50; }
+    tbody td { padding: 0.65rem 0.9rem; font-size: 0.9rem; }
+
+    .venue-name { display: block; font-weight: 600; color: #eee; }
+    .venue-meta { display: block; font-size: 0.75rem; margin-top: 2px; }
+
+    .type-cex { color: #e94560; font-weight: 600; }
+    .type-dex { color: #a8dadc; font-weight: 600; }
+    .chain-base { color: #4fc3f7; }
+
+    .price-cell { text-align: right; }
+    .price-val  { font-family: monospace; font-size: 1rem; font-weight: bold; }
+    .price-max  { color: #2ecc71; }
+    .price-min  { color: #e74c3c; }
+    .price-sub  { display: block; font-size: 0.72rem; color: #666; font-family: monospace; margin-top: 2px; }
+
+    .badge       { display: inline-block; font-size: 0.65rem; padding: 0.1rem 0.4rem; border-radius: 4px; margin-left: 4px; vertical-align: middle; }
+    .badge-high  { background: #1a4a2e; color: #2ecc71; }
+    .badge-low   { background: #4a1a1a; color: #e74c3c; }
+
+    .loading-row td { text-align: center; color: #555; padding: 2rem; }
+    .error-row   td { text-align: center; color: #e94560; padding: 2rem; font-size: 0.9rem; }
+
+    /* Spread bar */
+    .spread-summary {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 8px;
+      padding: 0.6rem 1.2rem;
+      margin-bottom: 1rem;
+      display: flex;
+      gap: 2rem;
+      flex-wrap: wrap;
+      font-size: 0.85rem;
+      color: #888;
+    }
+
+    .spread-summary span b { color: #eee; }
+    .spread-live { color: #2ecc71 !important; }
+
+    /* Footer */
+    .footer { display: flex; justify-content: space-between; font-size: 0.78rem; color: #555; padding: 0 0.2rem; }
+    .countdown { color: #0f3460; }
+    .countdown.soon { color: #a8dadc; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>ARB BOT</h1>
+
+  <!-- Tab switcher -->
+  <div class="tabs">
+    <button class="tab-btn" id="tab-xsgd" onclick="switchPair('xsgd')">XSGD / USDC</button>
+    <button class="tab-btn" id="tab-tgbp" onclick="switchPair('tgbp')">tGBP / USDC</button>
+  </div>
+
+  <!-- FX rate -->
+  <div class="fx-card">
+    <div>
+      <div class="fx-label" id="fx-label">—</div>
+      <div class="fx-value" id="fx-value">—</div>
+    </div>
+    <div class="fx-date" id="fx-date"></div>
+  </div>
+
+  <!-- Arb alert banner -->
+  <div class="arb-banner" id="arb-banner">
+    <div class="banner-header">
+      <span class="banner-icon">⚡</span>
+      <span class="banner-title">Arb Opportunities</span>
+      <button class="dismiss-btn" id="dismiss-btn">Dismiss</button>
+    </div>
+    <div id="opportunities-list"></div>
+    <div class="banner-note">Verify live prices before executing. Thresholds reflect historical profitability after fees and slippage.</div>
+    <div class="banner-time" id="banner-time"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <div class="control-group">
+      <label>Coinbase Order Size</label>
+      <input type="number" id="trade-size" value="10000" min="1000" step="1000">
+      <span style="font-size:0.85rem; color:#888;">USDC</span>
+    </div>
+    <div class="control-group">
+      <label>Refresh Every</label>
+      <select id="refresh-select">
+        <option value="15">15 s</option>
+        <option value="30" selected>30 s</option>
+        <option value="60">60 s</option>
+      </select>
+    </div>
+    <div class="control-group">
+      <button id="notif-btn" onclick="handleNotifBtn()" style="background:#0f3460;border:1px solid #1a4a80;color:#eee;border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;cursor:pointer;">🔔 Enable Alerts</button>
+    </div>
+    <div class="control-group">
+      <button onclick="toggleThresholds()" style="background:#0f3460;border:1px solid #1a4a80;color:#eee;border-radius:6px;padding:0.3rem 0.8rem;font-size:0.85rem;cursor:pointer;">⚙ Thresholds</button>
+    </div>
+  </div>
+
+  <!-- Threshold settings (collapsible, rendered dynamically per pair) -->
+  <div class="controls" id="threshold-panel" style="display:none; flex-direction:column; align-items:flex-start; gap:0.8rem;"></div>
+
+  <!-- Spread summary -->
+  <div class="spread-summary" id="spread-summary" style="display:none"></div>
+
+  <!-- Price table -->
+  <div class="table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Exchange</th>
+          <th>Price (USDC)</th>
+        </tr>
+      </thead>
+      <tbody id="table-body">
+        <tr class="loading-row"><td colspan="2">Fetching data…</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="footer">
+    <span id="last-updated"></span>
+    <span class="countdown" id="countdown"></span>
+  </div>
+</div>
+
+<script>
+  const OANDA_TOKEN    = '3eb69a25e2d332bfa94fb0b86e412d14-82b980708806f6549858fa908ae62223';
+  const WORKER_URL     = 'https://arb-bot-worker.keekxun.workers.dev';
+  const WORKER_API_KEY = '71c8fef0152bcd994c622ce26c046c8ef7740545';
+
+  // ── Pair configuration ───────────────────────────────────────────────────────
+  const PAIRS = {
+    xsgd: {
+      id: 'xsgd',
+      label: 'XSGD / USDC',
+      tokenSymbol: 'XSGD',
+      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/XSGD-USDC/book?level=2',
+      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/XSGD-USDC',
+      fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/USD_SGD/candles?count=1&granularity=S5&price=M',
+      fxLabel: 'SGD / USD Spot',
+      fxTransform: r => 1 / r,
+      dexPools: [
+        { chain: 'polygon',   address: '0x9bcef8ddd75817e66e01a5af313c776c74319394', name: 'Uniswap V3', display: 'Polygon'   },
+        { chain: 'base',      address: '0x892a6ab3fa0f1f839fcb0ae264a8c4bbfb030725', name: 'Aerodrome',  display: 'Base'      },
+        { chain: 'avalanche', address: '0x2b69e592cddfad48a93eba25e6d2709a6c077a1a', name: 'Uniswap V3', display: 'Avalanche' },
+      ],
+      defaultThresholds: {
+        polygon_base: 15, polygon_avalanche: 25, base_avalanche: 20,
+        cex_base: 10, cex_polygon: 15, cex_avalanche: 20,
+      },
+      dexDexThresholds: [
+        { key: 'polygon_base',      label: 'Polygon / Base',      chains: ['Polygon', 'Base']      },
+        { key: 'polygon_avalanche', label: 'Polygon / Avalanche', chains: ['Polygon', 'Avalanche'] },
+        { key: 'base_avalanche',    label: 'Base / Avalanche',    chains: ['Base', 'Avalanche']    },
+      ],
+      cexDexThresholds: [
+        { key: 'cex_base',      label: 'vs Base',      chain: 'Base'      },
+        { key: 'cex_polygon',   label: 'vs Polygon',   chain: 'Polygon'   },
+        { key: 'cex_avalanche', label: 'vs Avalanche', chain: 'Avalanche' },
+      ],
+    },
+    tgbp: {
+      id: 'tgbp',
+      label: 'tGBP / USDC',
+      tokenSymbol: 'TGBP',
+      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/TGBP-USDC/book?level=2',
+      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/TGBP-USDC',
+      fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles?count=1&granularity=S5&price=M',
+      fxLabel: 'GBP / USD Spot',
+      fxTransform: r => r,
+      dexPools: [
+        { chain: 'base', address: '0x99fb961b5f8d5bf137976ba50cf6999546b0503f', name: 'Aerodrome', display: 'Base' },
+      ],
+      defaultThresholds: {
+        cex_base: 10,
+      },
+      dexDexThresholds: [],
+      cexDexThresholds: [
+        { key: 'cex_base', label: 'vs Base', chain: 'Base' },
+      ],
+    },
+  };
+
+  // ── State ────────────────────────────────────────────────────────────────────
+  let activePairId    = localStorage.getItem('arb-active-pair') || 'xsgd';
+  let TRADE_SIZE_USDC = 10000;
+  let refreshSecs     = 30;
+  let countdownLeft   = 30;
+  let countdownHandle = null;
+  let refreshHandle   = null;
+  let audioCtx        = null;
+
+  const thresholds = {};
+  const dismissed  = {};
+  Object.keys(PAIRS).forEach(id => {
+    thresholds[id] = { ...PAIRS[id].defaultThresholds };
+    dismissed[id]  = false;
+  });
+
+  function pair() { return PAIRS[activePairId]; }
+  function thr()  { return thresholds[activePairId]; }
+
+  function buildPairThresholdsMap() {
+    const map = {};
+    for (const { key, chains } of pair().dexDexThresholds) {
+      map[`${chains[0]}-${chains[1]}`] = thr()[key];
+      map[`${chains[1]}-${chains[0]}`] = thr()[key];
+    }
+    return map;
+  }
+
+  function buildCexThresholdsMap() {
+    const map = {};
+    for (const { key, chain } of pair().cexDexThresholds) {
+      map[chain] = thr()[key];
+    }
+    return map;
+  }
+
+  // ── Audio ────────────────────────────────────────────────────────────────────
+  function beep() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc  = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = 660;
+      gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.8);
+    } catch (_) {}
+  }
+
+  // ── Order book walker ────────────────────────────────────────────────────────
+  function walkBook(levels, tradeUSDC) {
+    let remaining = tradeUSDC;
+    let tok = 0, usdc = 0;
+    for (const [priceStr, sizeStr] of levels) {
+      const p = parseFloat(priceStr);
+      const s = parseFloat(sizeStr);
+      if (!p || !s) continue;
+      const fill = Math.min(s * p, remaining);
+      tok  += fill / p;
+      usdc += fill;
+      remaining -= fill;
+      if (remaining <= 0) break;
+    }
+    return tok > 0 ? usdc / tok : null;
+  }
+
+  // ── Tab switching ────────────────────────────────────────────────────────────
+  function switchPair(id) {
+    activePairId = id;
+    localStorage.setItem('arb-active-pair', id);
+
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`tab-${id}`).classList.add('active');
+    document.getElementById('fx-label').textContent = pair().fxLabel;
+    document.getElementById('fx-value').textContent = '—';
+    document.getElementById('fx-date').textContent  = '';
+    document.getElementById('arb-banner').classList.remove('active');
+    document.getElementById('table-body').innerHTML = '<tr class="loading-row"><td colspan="2">Fetching data…</td></tr>';
+    document.getElementById('spread-summary').style.display = 'none';
+
+    renderThresholdPanel();
+    clearInterval(refreshHandle);
+    clearInterval(countdownHandle);
+    refresh();
+    scheduleRefresh();
+  }
+
+  // ── Thresholds ───────────────────────────────────────────────────────────────
+  async function loadThresholds() {
+    for (const id of Object.keys(PAIRS)) {
+      const p = PAIRS[id];
+      try {
+        const res = await fetch(`${WORKER_URL}/thresholds?pair=${id}`);
+        if (res.ok) {
+          const remote = await res.json();
+          Object.keys(p.defaultThresholds).forEach(k => {
+            if (typeof remote[k] === 'number' && remote[k] >= 0) thresholds[id][k] = remote[k];
+          });
+          localStorage.setItem(`arb-thresholds-${id}`, JSON.stringify(thresholds[id]));
+          continue;
+        }
+      } catch (_) {}
+      try {
+        const saved = JSON.parse(localStorage.getItem(`arb-thresholds-${id}`) || '{}');
+        Object.keys(p.defaultThresholds).forEach(k => {
+          if (typeof saved[k] === 'number' && saved[k] >= 0) thresholds[id][k] = saved[k];
+        });
+      } catch (_) {}
+    }
+    renderThresholdPanel();
+  }
+
+  async function saveThresholds() {
+    const id = activePairId;
+    localStorage.setItem(`arb-thresholds-${id}`, JSON.stringify(thresholds[id]));
+    try {
+      await fetch(`${WORKER_URL}/thresholds?pair=${id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': WORKER_API_KEY },
+        body: JSON.stringify(thresholds[id]),
+      });
+    } catch (_) {}
+  }
+
+  function renderThresholdPanel() {
+    const p = pair();
+    const t = thr();
+    let html = '';
+
+    if (p.dexDexThresholds.length > 0) {
+      html += `<div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;">DEX ↔ DEX min spread (bps)</div>`;
+      html += `<div style="display:flex;flex-wrap:wrap;gap:0.8rem;">`;
+      for (const { key, label } of p.dexDexThresholds) {
+        html += `<div class="control-group"><label>${label}</label><input type="number" id="thr-${key}" value="${t[key] ?? ''}" min="0" step="1" style="width:70px"></div>`;
+      }
+      html += `</div>`;
+    }
+
+    html += `<div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;${p.dexDexThresholds.length ? 'margin-top:0.2rem;' : ''}">Coinbase ↔ DEX min spread (bps)</div>`;
+    html += `<div style="display:flex;flex-wrap:wrap;gap:0.8rem;">`;
+    for (const { key, label } of p.cexDexThresholds) {
+      html += `<div class="control-group"><label>${label}</label><input type="number" id="thr-${key}" value="${t[key] ?? ''}" min="0" step="1" style="width:70px"></div>`;
+    }
+    html += `</div>`;
+
+    const panel = document.getElementById('threshold-panel');
+    panel.innerHTML = html;
+
+    for (const { key } of [...p.dexDexThresholds, ...p.cexDexThresholds]) {
+      document.getElementById(`thr-${key}`).addEventListener('change', async e => {
+        const val = parseInt(e.target.value);
+        if (!isNaN(val) && val >= 0) {
+          thresholds[activePairId][key] = val;
+          await saveThresholds();
+          refresh();
+        }
+      });
+    }
+  }
+
+  function toggleThresholds() {
+    const panel = document.getElementById('threshold-panel');
+    panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+  }
+
+  // ── Fetch FX ─────────────────────────────────────────────────────────────────
+  async function fetchFX() {
+    const p = pair();
+    try {
+      const res    = await fetch(p.fxUrl, { headers: { 'Authorization': `Bearer ${OANDA_TOKEN}` } });
+      const data   = await res.json();
+      const candle = data.candles?.[0];
+      if (candle) {
+        const rate = p.fxTransform(parseFloat(candle.mid.c));
+        document.getElementById('fx-value').textContent = rate.toFixed(4);
+        const ts = candle.time ? new Date(candle.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+        document.getElementById('fx-date').textContent  = `Oanda live · ${ts}`;
+      }
+    } catch (_) {
+      document.getElementById('fx-value').innerHTML = '<span class="fx-error">Unavailable</span>';
+    }
+  }
+
+  // ── Fetch tickers ─────────────────────────────────────────────────────────────
+  async function fetchTickers() {
+    const p = pair();
+
+    const [cbRes, ...dsParsed] = await Promise.all([
+      fetch(p.coinbaseBookUrl).then(r => r.ok ? r.json() : null).catch(() => null),
+      ...p.dexPools.map(pool =>
+        fetch(`https://api.dexscreener.com/latest/dex/pairs/${pool.chain}/${pool.address}`)
+          .then(r => r.ok ? r.json() : null)
+          .catch(() => null)
+      ),
+    ]);
+
+    const rows = [];
+
+    if (cbRes) {
+      const effectiveAsk = walkBook(cbRes.asks, TRADE_SIZE_USDC);
+      const effectiveBid = walkBook(cbRes.bids, TRADE_SIZE_USDC);
+      if (effectiveAsk && effectiveBid) {
+        rows.push({
+          name: 'Coinbase', chain: '—', type: 'CEX',
+          price: (effectiveAsk + effectiveBid) / 2,
+          effectiveAsk, effectiveBid,
+          volume: null, stale: false,
+          tradeUrl: p.coinbaseTradeUrl,
+        });
+      }
+    }
+
+    dsParsed.forEach((dsData, i) => {
+      if (!dsData) return;
+      const pool     = p.dexPools[i];
+      const pairData = dsData.pairs?.[0];
+      if (!pairData) return;
+      const base  = (pairData.baseToken?.symbol  || '').toUpperCase();
+      const quote = (pairData.quoteToken?.symbol || '').toUpperCase();
+      const raw   = parseFloat(pairData.priceNative);
+      let price   = null;
+      if (base === p.tokenSymbol && (quote === 'USDC' || quote === 'USD')) price = raw;
+      if (quote === p.tokenSymbol && (base === 'USDC' || base === 'USD') && raw > 0) price = 1 / raw;
+      if (price && price > 0) {
+        rows.push({
+          name: pool.name, chain: pool.display, type: 'DEX',
+          price, volume: pairData.volume?.h24 || 0, stale: false,
+          tradeUrl: `https://dexscreener.com/${pool.chain}/${pool.address}`,
+        });
+      }
+    });
+
+    return rows;
+  }
+
+  // ── Render table ──────────────────────────────────────────────────────────────
+  function fmtVol(v) {
+    if (!v) return '—';
+    if (v >= 1e6) return `$${(v/1e6).toFixed(2)}M`;
+    if (v >= 1e3) return `$${(v/1e3).toFixed(1)}K`;
+    return `$${v.toFixed(0)}`;
+  }
+
+  function chainClass(chain) {
+    const map = { Base: 'chain-base', Polygon: 'chain-polygon', Avalanche: 'chain-avalanche' };
+    return map[chain] || '';
+  }
+
+  function renderTable(rows) {
+    const tbody  = document.getElementById('table-body');
+    const active = rows.filter(r => !r.stale);
+
+    if (!rows.length) {
+      tbody.innerHTML = '<tr class="error-row"><td colspan="2">No data found.</td></tr>';
+      document.getElementById('spread-summary').style.display = 'none';
+      return;
+    }
+
+    const prices = active.map(r => r.price);
+    const maxP   = Math.max(...prices);
+    const minP   = Math.min(...prices);
+
+    active.sort((a, b) => b.price - a.price);
+
+    tbody.innerHTML = active.map(r => {
+      const isMax     = r.price === maxP;
+      const isMin     = r.price === minP && active.length > 1;
+      const priceCls  = isMax ? 'price-max' : isMin ? 'price-min' : '';
+      const badge     = isMax ? '<span class="badge badge-high">HIGH</span>' : isMin ? '<span class="badge badge-low">LOW</span>' : '';
+      const typeCls   = r.type === 'CEX' ? 'type-cex' : 'type-dex';
+      const chainMeta = r.chain !== '—' ? ` · <span class="${chainClass(r.chain)}">${r.chain}</span>` : '';
+      const volLine   = r.volume ? `<span class="price-sub" style="color:#555">${fmtVol(r.volume)}</span>` : '';
+      const priceCell = r.type === 'CEX'
+        ? `<span class="price-val ${priceCls}">${r.price.toFixed(6)}</span>${badge}<span class="price-sub">bid ${r.effectiveBid.toFixed(6)} · ask ${r.effectiveAsk.toFixed(6)}</span>`
+        : `<span class="price-val ${priceCls}">${r.price.toFixed(6)}</span>${badge}${volLine}`;
+      return `
+        <tr>
+          <td>
+            <span class="venue-name">${r.name}</span>
+            <span class="venue-meta"><span class="${typeCls}">${r.type}</span>${chainMeta}</span>
+          </td>
+          <td class="price-cell">${priceCell}</td>
+        </tr>`;
+    }).join('');
+
+    // Spread summary
+    const PAIR_THR  = buildPairThresholdsMap();
+    const CEX_THR   = buildCexThresholdsMap();
+    const dexRows   = active.filter(r => r.type === 'DEX');
+    const cexRow    = active.find(r => r.type === 'CEX');
+    const pairLines = [];
+
+    for (let i = 0; i < dexRows.length; i++) {
+      for (let j = i + 1; j < dexRows.length; j++) {
+        const a = dexRows[i], b = dexRows[j];
+        const min = PAIR_THR[`${a.chain}-${b.chain}`];
+        if (min === undefined) continue;
+        const spread = Math.abs(a.price - b.price) / Math.min(a.price, b.price) * 10000;
+        pairLines.push(`<span>${a.chain} / ${b.chain}: <b class="${spread >= min ? 'spread-live' : ''}">${spread.toFixed(1)} bps</b> <span style="color:#444">(min ${min})</span></span>`);
+      }
+    }
+
+    if (cexRow) {
+      for (const dex of dexRows) {
+        const min = CEX_THR[dex.chain];
+        if (min === undefined) continue;
+        const buyOnCex  = (dex.price - cexRow.effectiveAsk) / cexRow.effectiveAsk * 10000;
+        const sellOnCex = (cexRow.effectiveBid - dex.price) / dex.price * 10000;
+        const spread    = Math.max(buyOnCex, sellOnCex);
+        pairLines.push(`<span>Coinbase / ${dex.chain}: <b class="${spread >= min ? 'spread-live' : ''}">${spread.toFixed(1)} bps</b> <span style="color:#444">(min ${min})</span></span>`);
+      }
+    }
+
+    const summary = document.getElementById('spread-summary');
+    summary.innerHTML     = pairLines.join('');
+    summary.style.display = pairLines.length ? 'flex' : 'none';
+  }
+
+  // ── Arb alert ─────────────────────────────────────────────────────────────────
+  function checkArb(rows) {
+    const banner   = document.getElementById('arb-banner');
+    const PAIR_THR = buildPairThresholdsMap();
+    const CEX_THR  = buildCexThresholdsMap();
+    const dexRows  = rows.filter(r => r.type === 'DEX' && !r.stale);
+    const cexRow   = rows.find(r => r.type === 'CEX');
+    const opps     = [];
+
+    for (let i = 0; i < dexRows.length; i++) {
+      for (let j = i + 1; j < dexRows.length; j++) {
+        const a = dexRows[i], b = dexRows[j];
+        const min = PAIR_THR[`${a.chain}-${b.chain}`];
+        if (min === undefined) continue;
+        const spreadBps = Math.abs(a.price - b.price) / Math.min(a.price, b.price) * 10000;
+        if (spreadBps >= min) {
+          const buyRow  = a.price <= b.price ? a : b;
+          const sellRow = a.price <= b.price ? b : a;
+          opps.push({ buyRow, sellRow, spreadBps, min });
+        }
+      }
+    }
+
+    if (cexRow) {
+      for (const dex of dexRows) {
+        const min = CEX_THR[dex.chain];
+        if (min === undefined) continue;
+        const buyOnCex  = (dex.price - cexRow.effectiveAsk) / cexRow.effectiveAsk * 10000;
+        const sellOnCex = (cexRow.effectiveBid - dex.price) / dex.price * 10000;
+        if (buyOnCex >= min)  opps.push({ buyRow: { ...cexRow, price: cexRow.effectiveAsk }, sellRow: dex, spreadBps: buyOnCex, min });
+        if (sellOnCex >= min) opps.push({ buyRow: dex, sellRow: { ...cexRow, price: cexRow.effectiveBid }, spreadBps: sellOnCex, min });
+      }
+    }
+
+    if (!opps.length) {
+      dismissed[activePairId] = false;
+      banner.classList.remove('active');
+      return;
+    }
+
+    opps.sort((a, b) => (b.spreadBps - b.min) - (a.spreadBps - a.min));
+
+    document.getElementById('opportunities-list').innerHTML = opps.map((opp, idx) => `
+      ${idx > 0 ? '<hr class="opp-divider">' : ''}
+      <div class="opp-header">
+        <span class="opp-spread">${opp.spreadBps.toFixed(1)} bps</span>
+        <span class="opp-pair">${opp.buyRow.chain} → ${opp.sellRow.chain}</span>
+        <span class="opp-min">min: ${opp.min} bps</span>
+      </div>
+      <div class="banner-actions">
+        <div class="action buy">
+          <div class="action-label">Buy (cheaper)</div>
+          <div class="action-venue">${opp.buyRow.name}</div>
+          <div class="action-chain">${opp.buyRow.chain}</div>
+          <div class="action-price">${opp.buyRow.price.toFixed(6)}</div>
+          <a class="action-link" href="${opp.buyRow.tradeUrl || '#'}" target="_blank" rel="noopener">Trade →</a>
+        </div>
+        <div class="action sell">
+          <div class="action-label">Sell (more expensive)</div>
+          <div class="action-venue">${opp.sellRow.name}</div>
+          <div class="action-chain">${opp.sellRow.chain}</div>
+          <div class="action-price">${opp.sellRow.price.toFixed(6)}</div>
+          <a class="action-link" href="${opp.sellRow.tradeUrl || '#'}" target="_blank" rel="noopener">Trade →</a>
+        </div>
+      </div>
+    `).join('');
+
+    if (!dismissed[activePairId]) {
+      const wasActive = banner.classList.contains('active');
+      banner.classList.add('active');
+      if (!wasActive) {
+        beep();
+        const best = opps[0];
+        sendNotif(`${pair().label} Arb`, `${best.spreadBps.toFixed(1)} bps · ${best.buyRow.chain} → ${best.sellRow.chain}`);
+        document.getElementById('banner-time').textContent = `Detected at ${new Date().toLocaleTimeString()}`;
+      }
+    }
+  }
+
+  // ── Refresh ───────────────────────────────────────────────────────────────────
+  async function refresh() {
+    document.getElementById('last-updated').textContent = 'Refreshing…';
+    await fetchFX().catch(() => {});
+
+    try {
+      const rows = await fetchTickers();
+      renderTable(rows);
+      checkArb(rows);
+      document.getElementById('last-updated').textContent = `Last updated: ${new Date().toLocaleTimeString()}`;
+    } catch (e) {
+      document.getElementById('table-body').innerHTML = `<tr class="error-row"><td colspan="2">Error: ${e.message}</td></tr>`;
+      document.getElementById('last-updated').textContent = 'Failed to fetch data.';
+    }
+
+    startCountdown();
+  }
+
+  function startCountdown() {
+    clearInterval(countdownHandle);
+    countdownLeft = refreshSecs;
+    const el   = document.getElementById('countdown');
+    const tick = () => {
+      el.className   = countdownLeft <= 5 ? 'countdown soon' : 'countdown';
+      el.textContent = `Next refresh in ${countdownLeft}s`;
+      countdownLeft--;
+    };
+    tick();
+    countdownHandle = setInterval(tick, 1000);
+  }
+
+  function scheduleRefresh() {
+    clearInterval(refreshHandle);
+    refreshHandle = setInterval(() => { clearInterval(countdownHandle); refresh(); }, refreshSecs * 1000);
+  }
+
+  // ── Controls ──────────────────────────────────────────────────────────────────
+  document.getElementById('dismiss-btn').addEventListener('click', () => {
+    dismissed[activePairId] = true;
+    document.getElementById('arb-banner').classList.remove('active');
+  });
+
+  document.getElementById('trade-size').addEventListener('change', e => {
+    const val = parseInt(e.target.value);
+    if (val >= 1000) { TRADE_SIZE_USDC = val; refresh(); }
+  });
+
+  document.getElementById('refresh-select').addEventListener('change', e => {
+    refreshSecs = parseInt(e.target.value);
+    scheduleRefresh();
+    startCountdown();
+  });
+
+  // ── Notifications ─────────────────────────────────────────────────────────────
+  function updateNotifBtn() {
+    const btn = document.getElementById('notif-btn');
+    if (!btn || !('Notification' in window)) return;
+    if (Notification.permission === 'granted') {
+      btn.textContent = '🔔 Alerts On';
+      btn.style.borderColor = '#2ecc71';
+      btn.style.color = '#2ecc71';
+    } else if (Notification.permission === 'denied') {
+      btn.textContent = '🔕 Alerts Blocked';
+      btn.style.color = '#888';
+      btn.style.borderColor = '#444';
+    } else {
+      btn.textContent = '🔔 Enable Alerts';
+      btn.style.borderColor = '#1a4a80';
+      btn.style.color = '#eee';
+    }
+  }
+
+  async function handleNotifBtn() {
+    if (!('Notification' in window)) return;
+    if (Notification.permission !== 'granted') await Notification.requestPermission();
+    updateNotifBtn();
+  }
+
+  function sendNotif(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body, icon: './icon.svg' });
+    }
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  updateNotifBtn();
+  switchPair(activePairId);
+  loadThresholds();
+</script>
+</body>
+</html>
