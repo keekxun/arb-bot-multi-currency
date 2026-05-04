@@ -396,14 +396,20 @@
       fxLabel: 'GBP / USD Spot',
       fxTransform: r => r,
       dexPools: [
-        { chain: 'base', address: '0x99fb961b5f8d5bf137976ba50cf6999546b0503f', name: 'Aerodrome', display: 'Base' },
+        { chain: 'base',    address: '0x99fb961b5f8d5bf137976ba50cf6999546b0503f', name: 'Aerodrome',   display: 'Base'    },
+        { chain: 'polygon', address: '0x66b1b1e1d030d36cae831b19c07fcf79bb842abb', name: 'Uniswap V3', display: 'Polygon' },
       ],
       defaultThresholds: {
+        polygon_base: 20,
         cex_base: 10,
+        cex_polygon: 20,
       },
-      dexDexThresholds: [],
+      dexDexThresholds: [
+        { key: 'polygon_base', label: 'Polygon / Base', chains: ['Polygon', 'Base'] },
+      ],
       cexDexThresholds: [
-        { key: 'cex_base', label: 'vs Base', chain: 'Base' },
+        { key: 'cex_base',    label: 'vs Base',    chain: 'Base'    },
+        { key: 'cex_polygon', label: 'vs Polygon', chain: 'Polygon' },
       ],
     },
   };
