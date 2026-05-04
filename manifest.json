@@ -1,8 +1,8 @@
 {
-  "name": "XSGD Arb Bot",
-  "short_name": "XSGD Arb",
-  "description": "XSGD/USDC arbitrage opportunity alerts",
-  "start_url": "./arb-bot.html",
+  "name": "Arb Bot",
+  "short_name": "Arb Bot",
+  "description": "Multi-pair arbitrage opportunity alerts (XSGD, tGBP)",
+  "start_url": "./arb-bot-multi-currency.html",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#1a1a2e",
