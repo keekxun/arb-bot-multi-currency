@@ -4,13 +4,15 @@ This file provides guidance to Claude Code when working with code in this reposi
 
 ## Running the app
 
-No build step — `arb-bot.html` is self-contained. Open directly in a browser:
+No build step — `arb-bot-multi-currency.html` is self-contained (all CSS/HTML/JS in one file). Open directly in a browser:
 
 ```bash
-open arb-bot.html
+open arb-bot-multi-currency.html
 ```
 
-After any edit, reopen the file or hard-refresh with **Cmd+Shift+R**.
+After any edit, reopen the file or hard-refresh with **Cmd+Shift+R** (a service worker caches the app shell — see below).
+
+`index.html` is a redirect stub (meta-refresh to `arb-bot-multi-currency.html`) so GitHub Pages root serves the app.
 
 ## Git workflow
 
@@ -22,36 +24,52 @@ git commit -m "concise description"
 git push
 ```
 
-Remote: `https://github.com/keekxun/arb-bot` (public, `main` branch).
-GitHub Pages: `https://keekxun.github.io/arb-bot/` → redirects to `arb-bot.html`.
+Remote: `https://github.com/keekxun/arb-bot-multi-currency` (`main` branch).
 
-## arb-bot.html architecture
+## Architecture
 
-Single-file app — all CSS, HTML, and JS in one file.
+Single-file, tab-based, multi-pair arbitrage monitor. Currently tracks **XSGD/USDC** and **tGBP/USDC**.
 
-**Data sources**
-- `OANDA_TOKEN` / `FX_URL` — Oanda fxTrade Practice API for SGD/USD spot rate.
-- `COINBASE_BOOK_URL` — Coinbase level-2 order book for `XSGD-USDC`. Effective prices are computed by walking the book for a configurable USDC trade size (`TRADE_SIZE_USDC`, default 10k).
-- `DEX_POOLS` — Three fixed pool addresses queried via DexScreener API: Uniswap V3 (Polygon), Aerodrome (Base), Uniswap V3 (Avalanche).
+### Pair configuration (`PAIRS` object)
 
-**Order book walking (`walkBook`)**
-- Takes bid or ask levels and a USDC trade size, returns the effective average USDC/XSGD price for that size.
-- Used to compute `effectiveAsk` (cost to buy XSGD) and `effectiveBid` (proceeds from selling XSGD) on Coinbase.
+All per-pair behavior is driven by one config object — adding a new pair means adding an entry here, not new code paths:
+- `coinbaseBookUrl` / `coinbaseTradeUrl` — Coinbase Exchange level-2 order book endpoint and deep-link for the pair.
+- `fxUrl` / `fxLabel` / `fxTransform` — Oanda fxTrade Practice API candle endpoint for the reference spot rate, plus a transform (e.g. XSGD inverts `USD_SGD`, tGBP uses `GBP_USD` directly).
+- `dexPools` — array of `{ chain, address, name, display }` pool addresses queried via the DexScreener API.
+- `defaultThresholds` — bps thresholds per venue pair, keyed like `polygon_base`, `cex_base`, etc.
+- `dexDexThresholds` / `cexDexThresholds` — declarative lists that drive both the dynamic threshold-settings panel and the spread/arb calculations.
 
-**Arb detection (`checkArb`)**
-- DEX-to-DEX: compares each pair of DEX pools against `PAIR_THRESHOLDS` (bps).
-- CEX-to-DEX: compares Coinbase effective ask/bid against each DEX price against `CEX_THRESHOLDS` (bps).
-- Opportunities sorted by margin above threshold (most profitable first).
-- Alert banner shows buy/sell venue, price, and deep-link to trade.
+`activePairId` tracks the selected tab (persisted in `localStorage`); `switchPair()` swaps config, resets the UI, and restarts the refresh loop.
 
-**Thresholds**
-- `PAIR_THRESHOLDS`: minimum spread (bps) for DEX-DEX pairs to be considered profitable (accounts for bridge/gas costs).
-- `CEX_THRESHOLDS`: minimum spread (bps) for Coinbase vs each DEX chain.
+### Data sources
+- `OANDA_TOKEN` — Oanda fxTrade Practice API, used per-pair via `PAIRS[id].fxUrl`.
+- Coinbase Exchange public order book (`api.exchange.coinbase.com/products/<PAIR>/book?level=2`) — no key required.
+- DexScreener API (`api.dexscreener.com/latest/dex/pairs/<chain>/<address>`) — one fetch per configured pool.
+- `WORKER_URL` (Cloudflare Worker at `arb-bot-worker.keekxun.workers.dev`) — persists per-pair thresholds server-side (`GET/POST /thresholds?pair=<id>`), authenticated via `WORKER_API_KEY` on writes. Falls back to `localStorage` if the worker is unreachable.
 
-**Alerts**
-- Arb banner appears with a beep when any opportunity clears its threshold.
-- Dismiss button suppresses the banner until opportunities change.
+### Order book walking (`walkBook`)
+Takes bid or ask levels and a USDC trade size, returns the effective average USDC/token price for that size. Used to compute `effectiveAsk` (cost to buy) and `effectiveBid` (proceeds from selling) on Coinbase, driven by the adjustable `Coinbase Order Size` input (default 10,000 USDC).
 
-**Refresh loop**
-- Auto-refresh: 15 / 30 / 60 s (dropdown, default 30 s). Countdown shown in footer.
+### Arb detection (`checkArb`)
+- DEX-to-DEX: compares each pair of DEX pools for the active pair against `dexDexThresholds` (bps).
+- CEX-to-DEX: compares Coinbase effective ask/bid against each DEX price against `cexDexThresholds` (bps).
+- Opportunities sorted by margin above threshold (most profitable first); alert banner shows buy/sell venue, price, and deep-link to trade.
+- Dismissal state (`dismissed[pairId]`) and alert banner are tracked per-pair, so switching tabs doesn't carry over a dismissed/active state from the other pair.
+
+### Thresholds
+- Defaults live in `PAIRS[id].defaultThresholds`.
+- `loadThresholds()` fetches remote values from the Worker on load (falling back to `localStorage`), `saveThresholds()` writes back to both on any change.
+- The threshold panel (`renderThresholdPanel`) is built dynamically from `dexDexThresholds`/`cexDexThresholds` for whichever pair is active.
+
+### Alerts
+- Arb banner appears with a beep (Web Audio) when any opportunity clears its threshold, plus a browser Notification if permission was granted (`🔔 Enable Alerts` button).
+- Dismiss button suppresses the banner for the active pair until opportunities change.
+
+### PWA / service worker
+- `manifest.json` + `icon.svg` make the app installable; `start_url` points at `arb-bot-multi-currency.html`.
+- `sw.js` caches the app shell (`arb-bot-multi-currency.html`, `manifest.json`, `icon.svg`) but explicitly bypasses caching for Oanda/Coinbase/DexScreener requests so price data is always live.
+- Bump the `CACHE` version string in `sw.js` (currently `arb-multi-v3`) whenever the app shell changes, so installed PWAs pick up the update.
+
+### Refresh loop
+- Auto-refresh: 15 / 30 / 60 s (dropdown, default 30 s), independent per browser session via `refreshSecs`. Countdown shown in footer.
 - FX and ticker fetches run independently — FX failure shows "Unavailable" without blocking the price table.
