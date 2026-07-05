@@ -26,6 +26,18 @@ git push
 
 Remote: `https://github.com/keekxun/arb-bot-multi-currency` (`main` branch).
 
+## Companion repo: arb-bot-worker
+
+This app's `PAIRS` config has a **shadow copy** in a separate repo/directory, `~/Desktop/arb-bot-worker` (`worker.js`, deployed to Cloudflare via `wrangler deploy`). That Worker runs the `/thresholds` persistence endpoint (see Data sources below) **and** a per-minute cron job that independently re-fetches Coinbase/DexScreener prices and fires Telegram alerts when a pair's thresholds are breached.
+
+**Any change to a pair here (new pair, new DEX pool, new threshold key) likely needs a matching change in `arb-bot-worker/worker.js`**, specifically:
+- `PAIR_CONFIGS[id]` — coinbaseUrl, tokenSymbol, dexPools, buildPairThresholds, buildCexThresholds
+- `PAIR_DEFAULTS[id]` — default threshold values
+- `PAIR_KV_KEYS[id]` — KV storage key for persisted thresholds
+- the `scheduled()` handler's `checkArbForPair(env, id)` list — otherwise the new/changed pair is never cron-checked and never alerts on Telegram
+
+After editing `worker.js`, commit + push that repo too, then run `npx wrangler deploy` from `~/Desktop/arb-bot-worker` to actually push the change live (a git push alone does not deploy it). Verify with `curl "https://arb-bot-worker.keekxun.workers.dev/debug?pair=<id>" -H "X-API-Key: <WORKER_API_KEY>"`.
+
 ## Architecture
 
 Single-file, tab-based, multi-pair arbitrage monitor. Currently tracks **XSGD/USDC** and **tGBP/USDC**.
