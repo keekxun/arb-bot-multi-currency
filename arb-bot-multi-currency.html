@@ -564,6 +564,37 @@
     renderThresholdPanel();
   }
 
+  async function loadOrderSize() {
+    try {
+      const res = await fetch(`${WORKER_URL}/order-size`);
+      if (res.ok) {
+        const { orderSize } = await res.json();
+        if (typeof orderSize === 'number' && orderSize >= 1000) {
+          TRADE_SIZE_USDC = orderSize;
+          localStorage.setItem('arb-order-size', String(orderSize));
+          document.getElementById('trade-size').value = orderSize;
+          return;
+        }
+      }
+    } catch (_) {}
+    const saved = parseInt(localStorage.getItem('arb-order-size'));
+    if (!isNaN(saved) && saved >= 1000) {
+      TRADE_SIZE_USDC = saved;
+      document.getElementById('trade-size').value = saved;
+    }
+  }
+
+  async function saveOrderSize() {
+    localStorage.setItem('arb-order-size', String(TRADE_SIZE_USDC));
+    try {
+      await fetch(`${WORKER_URL}/order-size`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': WORKER_API_KEY },
+        body: JSON.stringify({ orderSize: TRADE_SIZE_USDC }),
+      });
+    } catch (_) {}
+  }
+
   async function saveThresholds() {
     const id = activePairId;
     localStorage.setItem(`arb-thresholds-${id}`, JSON.stringify(thresholds[id]));
@@ -891,9 +922,9 @@
     document.getElementById('arb-banner').classList.remove('active');
   });
 
-  document.getElementById('trade-size').addEventListener('change', e => {
+  document.getElementById('trade-size').addEventListener('change', async e => {
     const val = parseInt(e.target.value);
-    if (val >= 1000) { TRADE_SIZE_USDC = val; refresh(); }
+    if (val >= 1000) { TRADE_SIZE_USDC = val; await saveOrderSize(); refresh(); }
   });
 
   document.getElementById('refresh-select').addEventListener('change', e => {
@@ -941,6 +972,7 @@
   updateNotifBtn();
   switchPair(activePairId);
   loadThresholds();
+  loadOrderSize();
 </script>
 </body>
 </html>
