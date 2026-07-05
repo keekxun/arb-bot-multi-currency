@@ -373,6 +373,7 @@
         { chain: 'avalanche', address: '0x2b69e592cddfad48a93eba25e6d2709a6c077a1a', name: 'Uniswap V3', display: 'Avalanche' },
         { chain: 'ethereum',  address: '0x6279653c28f138c8b31b8a0f6f8cd2c58e8c1705', name: 'Uniswap V3', display: 'Ethereum'  },
       ],
+      defaultOrderSize: 10000,
       defaultThresholds: {
         polygon_base: 15, polygon_avalanche: 25, base_avalanche: 20,
         cex_base: 10, cex_polygon: 15, cex_avalanche: 20,
@@ -407,6 +408,7 @@
         { chain: 'polygon',  address: '0x66b1b1e1d030d36cae831b19c07fcf79bb842abb', name: 'Uniswap V3', display: 'Polygon'  },
         { chain: 'ethereum', address: '0xd38b119e15a147d4e9311f8277c8ef1fdc9300c9', name: 'Uniswap V3', display: 'Ethereum' },
       ],
+      defaultOrderSize: 10000,
       defaultThresholds: {
         polygon_base: 35,
         cex_base: 15,
@@ -438,6 +440,7 @@
       dexPools: [
         { chain: 'base', address: '0xcde41d0b1ad079c3ceb7271559f738f503102852', name: 'Aerodrome', display: 'Base' },
       ],
+      defaultOrderSize: 5000,
       defaultThresholds: {
         cex_base: 30,
       },
@@ -450,7 +453,6 @@
 
   // ── State ────────────────────────────────────────────────────────────────────
   let activePairId    = localStorage.getItem('arb-active-pair') || 'xsgd';
-  let TRADE_SIZE_USDC = 10000;
   let refreshSecs     = 30;
   let countdownLeft   = 30;
   let countdownHandle = null;
@@ -458,14 +460,17 @@
   let audioCtx        = null;
 
   const thresholds = {};
+  const orderSizes = {};
   const dismissed  = {};
   Object.keys(PAIRS).forEach(id => {
     thresholds[id] = { ...PAIRS[id].defaultThresholds };
+    orderSizes[id] = PAIRS[id].defaultOrderSize;
     dismissed[id]  = false;
   });
 
-  function pair() { return PAIRS[activePairId]; }
-  function thr()  { return thresholds[activePairId]; }
+  function pair()      { return PAIRS[activePairId]; }
+  function thr()       { return thresholds[activePairId]; }
+  function orderSize() { return orderSizes[activePairId]; }
 
   function buildPairThresholdsMap() {
     const map = {};
@@ -531,6 +536,7 @@
     document.getElementById('arb-banner').classList.remove('active');
     document.getElementById('table-body').innerHTML = '<tr class="loading-row"><td colspan="2">Fetching data…</td></tr>';
     document.getElementById('spread-summary').style.display = 'none';
+    document.getElementById('trade-size').value = orderSize();
 
     renderThresholdPanel();
     clearInterval(refreshHandle);
@@ -565,32 +571,32 @@
   }
 
   async function loadOrderSize() {
-    try {
-      const res = await fetch(`${WORKER_URL}/order-size`);
-      if (res.ok) {
-        const { orderSize } = await res.json();
-        if (typeof orderSize === 'number' && orderSize >= 1000) {
-          TRADE_SIZE_USDC = orderSize;
-          localStorage.setItem('arb-order-size', String(orderSize));
-          document.getElementById('trade-size').value = orderSize;
-          return;
+    for (const id of Object.keys(PAIRS)) {
+      try {
+        const res = await fetch(`${WORKER_URL}/order-size?pair=${id}`);
+        if (res.ok) {
+          const { orderSize: remoteSize } = await res.json();
+          if (typeof remoteSize === 'number' && remoteSize >= 1000) {
+            orderSizes[id] = remoteSize;
+            localStorage.setItem(`arb-order-size-${id}`, String(remoteSize));
+            continue;
+          }
         }
-      }
-    } catch (_) {}
-    const saved = parseInt(localStorage.getItem('arb-order-size'));
-    if (!isNaN(saved) && saved >= 1000) {
-      TRADE_SIZE_USDC = saved;
-      document.getElementById('trade-size').value = saved;
+      } catch (_) {}
+      const saved = parseInt(localStorage.getItem(`arb-order-size-${id}`));
+      if (!isNaN(saved) && saved >= 1000) orderSizes[id] = saved;
     }
+    document.getElementById('trade-size').value = orderSize();
   }
 
   async function saveOrderSize() {
-    localStorage.setItem('arb-order-size', String(TRADE_SIZE_USDC));
+    const id = activePairId;
+    localStorage.setItem(`arb-order-size-${id}`, String(orderSizes[id]));
     try {
-      await fetch(`${WORKER_URL}/order-size`, {
+      await fetch(`${WORKER_URL}/order-size?pair=${id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-API-Key': WORKER_API_KEY },
-        body: JSON.stringify({ orderSize: TRADE_SIZE_USDC }),
+        body: JSON.stringify({ orderSize: orderSizes[id] }),
       });
     } catch (_) {}
   }
@@ -682,8 +688,8 @@
     const rows = [];
 
     if (cbRes) {
-      const effectiveAsk = walkBook(cbRes.asks, TRADE_SIZE_USDC);
-      const effectiveBid = walkBook(cbRes.bids, TRADE_SIZE_USDC);
+      const effectiveAsk = walkBook(cbRes.asks, orderSize());
+      const effectiveBid = walkBook(cbRes.bids, orderSize());
       if (effectiveAsk && effectiveBid) {
         rows.push({
           name: 'Coinbase', chain: '—', type: 'CEX',
@@ -924,7 +930,7 @@
 
   document.getElementById('trade-size').addEventListener('change', async e => {
     const val = parseInt(e.target.value);
-    if (val >= 1000) { TRADE_SIZE_USDC = val; await saveOrderSize(); refresh(); }
+    if (val >= 1000) { orderSizes[activePairId] = val; await saveOrderSize(); refresh(); }
   });
 
   document.getElementById('refresh-select').addEventListener('change', e => {
