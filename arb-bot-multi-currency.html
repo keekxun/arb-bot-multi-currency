@@ -277,6 +277,7 @@
   <div class="tabs">
     <button class="tab-btn" id="tab-xsgd" onclick="switchPair('xsgd')">XSGD / USDC</button>
     <button class="tab-btn" id="tab-tgbp" onclick="switchPair('tgbp')">tGBP / USDC</button>
+    <button class="tab-btn" id="tab-audd" onclick="switchPair('audd')">AUDD / USDC</button>
   </div>
 
   <!-- FX rate -->
@@ -423,6 +424,26 @@
         { key: 'cex_base',     label: 'vs Base',     chain: 'Base'     },
         { key: 'cex_polygon',  label: 'vs Polygon',  chain: 'Polygon'  },
         { key: 'cex_ethereum', label: 'vs Ethereum', chain: 'Ethereum' },
+      ],
+    },
+    audd: {
+      id: 'audd',
+      label: 'AUDD / USDC',
+      tokenSymbol: 'AUDD',
+      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/AUDD-USDC/book?level=2',
+      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/AUDD-USDC',
+      fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles?count=1&granularity=S5&price=M',
+      fxLabel: 'AUD / USD Spot',
+      fxTransform: r => r,
+      dexPools: [
+        { chain: 'base', address: '0xcde41d0b1ad079c3ceb7271559f738f503102852', name: 'Aerodrome', display: 'Base' },
+      ],
+      defaultThresholds: {
+        cex_base: 30,
+      },
+      dexDexThresholds: [],
+      cexDexThresholds: [
+        { key: 'cex_base', label: 'vs Base', chain: 'Base' },
       ],
     },
   };
