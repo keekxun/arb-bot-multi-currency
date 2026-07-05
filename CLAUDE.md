@@ -57,7 +57,7 @@ All per-pair behavior is driven by one config object — adding a new pair means
 - `OANDA_TOKEN` — Oanda fxTrade Practice API, used per-pair via `PAIRS[id].fxUrl`.
 - Coinbase Exchange public order book (`api.exchange.coinbase.com/products/<PAIR>/book?level=2`) — no key required.
 - DexScreener API (`api.dexscreener.com/latest/dex/pairs/<chain>/<address>`) — one fetch per configured pool.
-- `WORKER_URL` (Cloudflare Worker at `arb-bot-worker.keekxun.workers.dev`) — persists per-pair thresholds server-side (`GET/POST /thresholds?pair=<id>`), authenticated via `WORKER_API_KEY` on writes. Falls back to `localStorage` if the worker is unreachable.
+- `WORKER_URL` (Cloudflare Worker at `arb-bot-worker.keekxun.workers.dev`) — persists per-pair thresholds server-side (`GET/POST /thresholds?pair=<id>`) and the global Coinbase order size (`GET/POST /order-size`, shared across all pairs, not per-pair), authenticated via `WORKER_API_KEY` on writes. Falls back to `localStorage` if the worker is unreachable. The Worker's own cron job (Telegram alerting) reads both from the same KV store, so changing either in the UI takes effect there too.
 
 ### Order book walking (`walkBook`)
 Takes bid or ask levels and a USDC trade size, returns the effective average USDC/token price for that size. Used to compute `effectiveAsk` (cost to buy) and `effectiveBid` (proceeds from selling) on Coinbase, driven by the adjustable `Coinbase Order Size` input (default 10,000 USDC).
