@@ -396,20 +396,27 @@
       fxLabel: 'GBP / USD Spot',
       fxTransform: r => r,
       dexPools: [
-        { chain: 'base',    address: '0x99fb961b5f8d5bf137976ba50cf6999546b0503f', name: 'Aerodrome',   display: 'Base'    },
-        { chain: 'polygon', address: '0x66b1b1e1d030d36cae831b19c07fcf79bb842abb', name: 'Uniswap V3', display: 'Polygon' },
+        { chain: 'base',     address: '0x99fb961b5f8d5bf137976ba50cf6999546b0503f', name: 'Aerodrome',   display: 'Base'     },
+        { chain: 'polygon',  address: '0x66b1b1e1d030d36cae831b19c07fcf79bb842abb', name: 'Uniswap V3', display: 'Polygon'  },
+        { chain: 'ethereum', address: '0xd38b119e15a147d4e9311f8277c8ef1fdc9300c9', name: 'Uniswap V3', display: 'Ethereum' },
       ],
       defaultThresholds: {
         polygon_base: 35,
         cex_base: 15,
         cex_polygon: 30,
+        polygon_ethereum: 40,
+        base_ethereum: 30,
+        cex_ethereum: 25,
       },
       dexDexThresholds: [
-        { key: 'polygon_base', label: 'Polygon / Base', chains: ['Polygon', 'Base'] },
+        { key: 'polygon_base',      label: 'Polygon / Base',      chains: ['Polygon', 'Base']     },
+        { key: 'polygon_ethereum',  label: 'Polygon / Ethereum',  chains: ['Polygon', 'Ethereum'] },
+        { key: 'base_ethereum',     label: 'Base / Ethereum',     chains: ['Base', 'Ethereum']    },
       ],
       cexDexThresholds: [
-        { key: 'cex_base',    label: 'vs Base',    chain: 'Base'    },
-        { key: 'cex_polygon', label: 'vs Polygon', chain: 'Polygon' },
+        { key: 'cex_base',     label: 'vs Base',     chain: 'Base'     },
+        { key: 'cex_polygon',  label: 'vs Polygon',  chain: 'Polygon'  },
+        { key: 'cex_ethereum', label: 'vs Ethereum', chain: 'Ethereum' },
       ],
     },
   };
