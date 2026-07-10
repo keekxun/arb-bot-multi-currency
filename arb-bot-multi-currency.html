@@ -438,15 +438,21 @@
       fxLabel: 'AUD / USD Spot',
       fxTransform: r => r,
       dexPools: [
-        { chain: 'base', address: '0xcde41d0b1ad079c3ceb7271559f738f503102852', name: 'Aerodrome', display: 'Base' },
+        { chain: 'base',     address: '0xcde41d0b1ad079c3ceb7271559f738f503102852', name: 'Aerodrome',   display: 'Base'     },
+        { chain: 'ethereum', address: '0xbd69186bc1dd033977b1aa51cc30a75d2ea6df5dc62af7ca467201b512dcead5', name: 'Uniswap V4', display: 'Ethereum' },
       ],
       defaultOrderSize: 5000,
       defaultThresholds: {
         cex_base: 30,
+        base_ethereum: 350,
+        cex_ethereum: 350,
       },
-      dexDexThresholds: [],
+      dexDexThresholds: [
+        { key: 'base_ethereum', label: 'Base / Ethereum', chains: ['Base', 'Ethereum'] },
+      ],
       cexDexThresholds: [
-        { key: 'cex_base', label: 'vs Base', chain: 'Base' },
+        { key: 'cex_base',     label: 'vs Base',     chain: 'Base'     },
+        { key: 'cex_ethereum', label: 'vs Ethereum', chain: 'Ethereum' },
       ],
     },
   };
@@ -710,8 +716,8 @@
       const quote = (pairData.quoteToken?.symbol || '').toUpperCase();
       const raw   = parseFloat(pairData.priceNative);
       let price   = null;
-      if (base === p.tokenSymbol && (quote === 'USDC' || quote === 'USD')) price = raw;
-      if (quote === p.tokenSymbol && (base === 'USDC' || base === 'USD') && raw > 0) price = 1 / raw;
+      if (base === p.tokenSymbol && (quote === 'USDC' || quote === 'USD' || quote === 'USDT')) price = raw;
+      if (quote === p.tokenSymbol && (base === 'USDC' || base === 'USD' || base === 'USDT') && raw > 0) price = 1 / raw;
       if (price && price > 0) {
         rows.push({
           name: pool.name, chain: pool.display, type: 'DEX',
