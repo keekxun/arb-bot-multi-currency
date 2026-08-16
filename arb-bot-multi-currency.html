@@ -278,6 +278,7 @@
     <button class="tab-btn" id="tab-xsgd" onclick="switchPair('xsgd')">XSGD / USDC</button>
     <button class="tab-btn" id="tab-tgbp" onclick="switchPair('tgbp')">tGBP / USDC</button>
     <button class="tab-btn" id="tab-audd" onclick="switchPair('audd')">AUDD / USDC</button>
+    <button class="tab-btn" id="tab-audm" onclick="switchPair('audm')">AUDM / USDC</button>
   </div>
 
   <!-- FX rate -->
@@ -304,7 +305,7 @@
   <!-- Controls -->
   <div class="controls">
     <div class="control-group">
-      <label>Coinbase Order Size</label>
+      <label>CEX Order Size</label>
       <input type="number" id="trade-size" value="10000" min="1000" step="1000">
       <span style="font-size:0.85rem; color:#888;">USDC</span>
     </div>
@@ -362,8 +363,8 @@
       id: 'xsgd',
       label: 'XSGD / USDC',
       tokenSymbol: 'XSGD',
-      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/XSGD-USDC/book?level=2',
-      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/XSGD-USDC',
+      cexBookUrl: 'https://api.exchange.coinbase.com/products/XSGD-USDC/book?level=2',
+      cexTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/XSGD-USDC',
       fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/USD_SGD/candles?count=1&granularity=S5&price=M',
       fxLabel: 'SGD / USD Spot',
       fxTransform: r => 1 / r,
@@ -373,7 +374,7 @@
         { chain: 'avalanche', address: '0x00a743Da6D4Ee17aC3c34a13d0fF8f9cf86B9f07', name: 'Pharaoh DLMM', display: 'Avalanche' },
         { chain: 'ethereum',  address: '0x6279653c28f138c8b31b8a0f6f8cd2c58e8c1705', name: 'Uniswap V3', display: 'Ethereum'  },
       ],
-      defaultOrderSize: 10000,
+      defaultOrderSize: 5000,
       defaultThresholds: {
         polygon_base: 15, polygon_avalanche: 25, base_avalanche: 20,
         cex_base: 10, cex_polygon: 15, cex_avalanche: 20,
@@ -398,8 +399,8 @@
       id: 'tgbp',
       label: 'tGBP / USDC',
       tokenSymbol: 'TGBP',
-      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/TGBP-USDC/book?level=2',
-      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/TGBP-USDC',
+      cexBookUrl: 'https://api.exchange.coinbase.com/products/TGBP-USDC/book?level=2',
+      cexTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/TGBP-USDC',
       fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/GBP_USD/candles?count=1&granularity=S5&price=M',
       fxLabel: 'GBP / USD Spot',
       fxTransform: r => r,
@@ -432,8 +433,8 @@
       id: 'audd',
       label: 'AUDD / USDC',
       tokenSymbol: 'AUDD',
-      coinbaseBookUrl: 'https://api.exchange.coinbase.com/products/AUDD-USDC/book?level=2',
-      coinbaseTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/AUDD-USDC',
+      cexBookUrl: 'https://api.exchange.coinbase.com/products/AUDD-USDC/book?level=2',
+      cexTradeUrl: 'https://www.coinbase.com/advanced-trade/spot/AUDD-USDC',
       fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles?count=1&granularity=S5&price=M',
       fxLabel: 'AUD / USD Spot',
       fxTransform: r => r,
@@ -446,6 +447,34 @@
         cex_base: 30,
         base_ethereum: 350,
         cex_ethereum: 350,
+      },
+      dexDexThresholds: [
+        { key: 'base_ethereum', label: 'Base / Ethereum', chains: ['Base', 'Ethereum'] },
+      ],
+      cexDexThresholds: [
+        { key: 'cex_base',     label: 'vs Base',     chain: 'Base'     },
+        { key: 'cex_ethereum', label: 'vs Ethereum', chain: 'Ethereum' },
+      ],
+    },
+    audm: {
+      id: 'audm',
+      label: 'AUDM / USDC',
+      tokenSymbol: 'AUDM',
+      cexName: 'BTC Markets',
+      cexBookUrl: 'https://api.btcmarkets.net/v3/markets/AUDM-USDT/orderbook?level=2',
+      cexTradeUrl: 'https://app.btcmarkets.net/buy-sell?exchange=AUDM-USDT',
+      fxUrl: 'https://api-fxpractice.oanda.com/v3/instruments/AUD_USD/candles?count=1&granularity=S5&price=M',
+      fxLabel: 'AUD / USD Spot',
+      fxTransform: r => r,
+      dexPools: [
+        { chain: 'base',     address: '0xc9c676ee81df171b55d30484ed0c2a931c45e9ab', name: 'Aerodrome',   display: 'Base'     },
+        { chain: 'ethereum', address: '0x74de9fa4b9fe71eb02e1fdc90f2d3198a577072c6da06f283e1fd0ead44743d4', name: 'Uniswap V4', display: 'Ethereum' },
+      ],
+      defaultOrderSize: 5000,
+      defaultThresholds: {
+        cex_base: 100,
+        base_ethereum: 100,
+        cex_ethereum: 100,
       },
       dexDexThresholds: [
         { key: 'base_ethereum', label: 'Base / Ethereum', chains: ['Base', 'Ethereum'] },
@@ -633,7 +662,7 @@
       html += `</div>`;
     }
 
-    html += `<div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;${p.dexDexThresholds.length ? 'margin-top:0.2rem;' : ''}">Coinbase ↔ DEX min spread (bps)</div>`;
+    html += `<div style="font-size:0.75rem;color:#888;text-transform:uppercase;letter-spacing:1px;${p.dexDexThresholds.length ? 'margin-top:0.2rem;' : ''}">${p.cexName || 'Coinbase'} ↔ DEX min spread (bps)</div>`;
     html += `<div style="display:flex;flex-wrap:wrap;gap:0.8rem;">`;
     for (const { key, label } of p.cexDexThresholds) {
       html += `<div class="control-group"><label>${label}</label><input type="number" id="thr-${key}" value="${t[key] ?? ''}" min="0" step="1" style="width:70px"></div>`;
@@ -683,7 +712,7 @@
     const p = pair();
 
     const [cbRes, ...dsParsed] = await Promise.all([
-      fetch(p.coinbaseBookUrl).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch(p.cexBookUrl).then(r => r.ok ? r.json() : null).catch(() => null),
       ...p.dexPools.map(pool =>
         fetch(`https://api.dexscreener.com/latest/dex/pairs/${pool.chain}/${pool.address}`)
           .then(r => r.ok ? r.json() : null)
@@ -698,11 +727,11 @@
       const effectiveBid = walkBook(cbRes.bids, orderSize());
       if (effectiveAsk && effectiveBid) {
         rows.push({
-          name: 'Coinbase', chain: '—', type: 'CEX',
+          name: p.cexName || 'Coinbase', chain: '—', type: 'CEX',
           price: (effectiveAsk + effectiveBid) / 2,
           effectiveAsk, effectiveBid,
           volume: null, stale: false,
-          tradeUrl: p.coinbaseTradeUrl,
+          tradeUrl: p.cexTradeUrl,
         });
       }
     }
@@ -804,7 +833,7 @@
         const buyOnCex  = (dex.price - cexRow.effectiveAsk) / cexRow.effectiveAsk * 10000;
         const sellOnCex = (cexRow.effectiveBid - dex.price) / dex.price * 10000;
         const spread    = Math.max(buyOnCex, sellOnCex);
-        pairLines.push(`<span>Coinbase / ${dex.chain}: <b class="${spread >= min ? 'spread-live' : ''}">${spread.toFixed(1)} bps</b> <span style="color:#444">(min ${min})</span></span>`);
+        pairLines.push(`<span>${pair().cexName || 'Coinbase'} / ${dex.chain}: <b class="${spread >= min ? 'spread-live' : ''}">${spread.toFixed(1)} bps</b> <span style="color:#444">(min ${min})</span></span>`);
       }
     }
 

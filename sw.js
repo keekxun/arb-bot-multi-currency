@@ -1,4 +1,4 @@
-const CACHE = 'arb-multi-v10';
+const CACHE = 'arb-multi-v11';
 const SHELL = ['./arb-bot-multi-currency.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -17,7 +17,7 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = e.request.url;
-  if (url.includes('oanda.com') || url.includes('coinbase.com') || url.includes('dexscreener.com')) return;
+  if (url.includes('oanda.com') || url.includes('coinbase.com') || url.includes('dexscreener.com') || url.includes('btcmarkets.net')) return;
 
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request))
