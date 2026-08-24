@@ -1,4 +1,4 @@
-const CACHE = 'arb-multi-v11';
+const CACHE = 'arb-multi-v12';
 const SHELL = ['./arb-bot-multi-currency.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', e => {
