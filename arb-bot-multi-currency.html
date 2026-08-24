@@ -558,6 +558,13 @@
     return tok > 0 ? usdc / tok : null;
   }
 
+  // ── Fetch with timeout ───────────────────────────────────────────────────────
+  function fetchWithTimeout(url, opts = {}, timeoutMs = 8000) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...opts, signal: controller.signal }).finally(() => clearTimeout(timer));
+  }
+
   // ── Tab switching ────────────────────────────────────────────────────────────
   function switchPair(id) {
     activePairId = id;
@@ -693,7 +700,7 @@
   async function fetchFX() {
     const p = pair();
     try {
-      const res    = await fetch(p.fxUrl, { headers: { 'Authorization': `Bearer ${OANDA_TOKEN}` } });
+      const res    = await fetchWithTimeout(p.fxUrl, { headers: { 'Authorization': `Bearer ${OANDA_TOKEN}` } });
       const data   = await res.json();
       const candle = data.candles?.[0];
       if (candle) {
@@ -712,9 +719,9 @@
     const p = pair();
 
     const [cbRes, ...dsParsed] = await Promise.all([
-      fetch(p.cexBookUrl).then(r => r.ok ? r.json() : null).catch(() => null),
+      fetchWithTimeout(p.cexBookUrl).then(r => r.ok ? r.json() : null).catch(() => null),
       ...p.dexPools.map(pool =>
-        fetch(`https://api.dexscreener.com/latest/dex/pairs/${pool.chain}/${pool.address}`)
+        fetchWithTimeout(`https://api.dexscreener.com/latest/dex/pairs/${pool.chain}/${pool.address}`)
           .then(r => r.ok ? r.json() : null)
           .catch(() => null)
       ),
