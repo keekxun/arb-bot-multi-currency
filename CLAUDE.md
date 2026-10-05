@@ -31,7 +31,9 @@ Remote: `https://github.com/keekxun/arb-bot-multi-currency` (`main` branch).
 This app's `PAIRS` config has a **shadow copy** in a separate repo/directory, `~/Desktop/arb-bot-worker` (`worker.js`, deployed to Cloudflare via `wrangler deploy`). That Worker runs the `/thresholds` and `/order-size` persistence endpoints (see Data sources below) **and** a per-minute cron job that independently re-fetches CEX/DexScreener prices and fires Telegram alerts when a pair's thresholds are breached.
 
 **Any change to a pair here (new pair, new DEX pool, new threshold key, new/non-Coinbase CEX venue) likely needs a matching change in `arb-bot-worker/worker.js`**, specifically:
-- `PAIR_CONFIGS[id]` — `cexUrl`, `cexName` (optional, defaults to `'Coinbase'` in `fetchCex`), `tokenSymbol`, `dexPools`, `buildPairThresholds`, `buildCexThresholds`
+- `PAIR_CONFIGS[id]` — `cexUrl`, `cexAltUrl` (optional second order-book URL tried in parallel; Coinbase pairs use the Advanced Trade `product_book` endpoint), `cexName` (optional, defaults to `'Coinbase'` in `fetchCex`), `tokenSymbol`, `dexPools`, `buildPairThresholds`, `buildCexThresholds`
+  - **The Worker reads DEX prices on-chain, not from DexScreener** (DexScreener and Coinbase both rate-limit Cloudflare's shared IPs). Each `dexPools` entry therefore also needs `kind` (`'v3'` = Uniswap V3/Aerodrome `slot0`, `'lb'` = Liquidity Book/Pharaoh DLMM with `binStep`, `'v4'` = Uniswap V4 pool id via StateView), `tokenIsToken0`, `dec0`, `dec1` — look these up on-chain for the pool and verify the computed price against DexScreener before deploying. A pool on a new chain also needs an entry in the Worker's `RPCS` list, using providers tested *from Cloudflare*.
+  - The browser app here still uses DexScreener, so the dashboard and Telegram can differ by ~1 bps (DexScreener rounds prices to 4 decimals).
 - `PAIR_DEFAULTS[id]` — default threshold values
 - `PAIR_KV_KEYS[id]` — KV storage key for persisted thresholds
 - `ORDER_SIZE_DEFAULTS[id]` / `ORDER_SIZE_KV_KEYS[id]` — default order size and its KV storage key
