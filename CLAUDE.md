@@ -34,10 +34,11 @@ This app's `PAIRS` config has a **shadow copy** in a separate repo/directory, `~
 - `PAIR_CONFIGS[id]` — `cexUrl`, `cexAltUrl` (optional second order-book URL tried in parallel; Coinbase pairs use the Advanced Trade `product_book` endpoint), `cexName` (optional, defaults to `'Coinbase'` in `fetchCex`), `tokenSymbol`, `dexPools`, `buildPairThresholds`, `buildCexThresholds`
   - **The Worker reads DEX prices on-chain, not from DexScreener** (DexScreener and Coinbase both rate-limit Cloudflare's shared IPs). Each `dexPools` entry therefore also needs `kind` (`'v3'` = Uniswap V3/Aerodrome `slot0`, `'lb'` = Liquidity Book/Pharaoh DLMM with `binStep`, `'v4'` = Uniswap V4 pool id via StateView), `tokenIsToken0`, `dec0`, `dec1` — look these up on-chain for the pool and verify the computed price against DexScreener before deploying. A pool on a new chain also needs an entry in the Worker's `RPCS` list, using providers tested *from Cloudflare*.
   - The browser app here still uses DexScreener, so the dashboard and Telegram can differ by ~1 bps (DexScreener rounds prices to 4 decimals).
+  - The Worker also sends a Telegram "Price feed down" alert when any source (a DEX chain, or a pair's CEX book) fails on every run for 5+ minutes, then a "recovered" message (state in KV key `feed-health`). New pairs/chains are covered automatically once they're in `PAIR_CONFIGS` and the `scheduled()` `pairIds` list.
 - `PAIR_DEFAULTS[id]` — default threshold values
 - `PAIR_KV_KEYS[id]` — KV storage key for persisted thresholds
 - `ORDER_SIZE_DEFAULTS[id]` / `ORDER_SIZE_KV_KEYS[id]` — default order size and its KV storage key
-- the `scheduled()` handler's `checkArbForPair(env, id)` list — otherwise the new/changed pair is never cron-checked and never alerts on Telegram
+- the `scheduled()` handler's `pairIds` list — otherwise the new/changed pair is never cron-checked and never alerts on Telegram
 
 After editing `worker.js`, commit + push that repo too, then run `npx wrangler deploy` from `~/Desktop/arb-bot-worker` to actually push the change live (a git push alone does not deploy it). Verify with `curl "https://arb-bot-worker.keekxun.workers.dev/debug?pair=<id>" -H "X-API-Key: <WORKER_API_KEY>"`.
 
